@@ -1,0 +1,526 @@
+﻿<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<!DOCTYPE html>
+
+<style>
+    .DivTask {
+        margin:0 auto;
+        margin-top: 3px;
+        width:90%;
+        border:solid 1px lightgray;
+        padding: 1px;
+        top:0px;
+        vertical-align: top;
+    }
+</style>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Kanban</title>
+</head>
+<body>
+    <div style="height: 50px">
+        <label>Select your board: </label>
+        <select id="listBoards"></select>
+        <button id="loadBoard">Load this board</button>
+        <button id="lockBoard">Lock/unlock this board</button>
+        <button id="addBoard">Add a board</button>
+    </div>
+
+    <div style="height: 50px">
+        <button id="upgradeTask">Upgrade task</button>
+        <button id="downgradeTask">Downgrade task</button>
+        Title:
+        <textarea id="Title" rows="1" style="resize:none; width:200px"></textarea>
+        Description:
+        <textarea id="Description" rows="1" style="resize:none; width:400px"></textarea>
+        <input type="date" id="DateTask" />
+        <button id="addTask">Add task</button>
+        <button id="updateTask">Update task</button>
+        <button id="deleteTask">Delete task</button>
+    </div>
+
+    <div style="width:99%; height:calc(100% - 105px); border: solid 2px black">
+        <div id="TODO" style="display:inline-block; vertical-align: top; width:33%"></div>
+        <div id="DOING" style="display:inline-block; height:100%; width:33%; border-left:solid 2px gray; border-right:solid 2px gray; vertical-align: top;"></div>
+        <div id="DONE" style="display: inline-block; width:33%; vertical-align: top;"></div>
+    </div>
+
+</body>
+</html>
+
+
+<script type="text/javascript">
+
+    ReloadBoardList(FillTasks, null);
+
+    
+    function FillTasks() {
+    
+        var task = document.getElementsByClassName("DivTask");
+        for(var i = task.length - 1 ; i >= 0 ; i--)
+        {
+            task[i].remove();
+        }
+
+        var TODO = document.getElementById("TODO");
+        var DOING = document.getElementById("DOING");
+        var DONE = document.getElementById("DONE");
+        if (document.getElementById("listBoards").options.length > 0) {
+            $.ajax({
+                url: "https://localhost:44303/Tasks/GetTasksByBoard/" + document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value,
+                type: "get",
+                success: function (result) {
+                    $.each(result, function (i, task) {
+                        if (task.status == 0) {
+
+                            var e = document.createElement("div");
+
+                            var checkbox = document.createElement('input');
+                            checkbox.type = "checkbox";
+                            checkbox.classList.add("checkbox");
+                            checkbox.name = task.id;
+                            checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                            checkbox.id = task.id;
+
+                            e.appendChild(checkbox);
+
+                            e.classList.add("DivTask");
+
+                            var lb = document.createElement("label");
+                            lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                            e.appendChild(lb);
+                            TODO.appendChild(e);
+
+                        }
+                        else if (task.status == 1) {
+
+                            var e = document.createElement("div");
+
+                            var checkbox = document.createElement('input');
+                            checkbox.type = "checkbox";
+                            checkbox.classList.add("checkbox");
+                            checkbox.name = task.id;
+                            checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                            checkbox.id = task.id;
+
+                            e.appendChild(checkbox);
+
+                            e.classList.add("DivTask");
+
+                            var lb = document.createElement("label");
+                            lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                            e.appendChild(lb);
+                            DOING.appendChild(e);
+                        }
+                        else if (task.status == 2) {
+
+                            var e = document.createElement("div");
+                            var checkbox = document.createElement('input');
+                            checkbox.type = "checkbox";
+                            checkbox.classList.add("checkbox");
+                            checkbox.name = task.id;
+                            checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" +  "End time: " + task.endDateAsString;
+                            checkbox.id = task.id;
+
+                            e.appendChild(checkbox);
+
+                            e.classList.add("DivTask");
+
+                            var lb = document.createElement("label");
+                            lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                            e.appendChild(lb);
+                            DONE.appendChild(e);
+                        }
+                    });
+                }
+            })
+        }
+    }
+
+    function ReloadBoardList(callback, selected) { 
+        var select = document.getElementById("listBoards");
+        for(var i = select.options.length - 1 ; i >= 0 ; i--)
+        {
+            select.remove(i);
+        }
+
+        $.ajax({
+            url: "https://localhost:44303/Boards/GetBoard",
+            type: "get",
+            success: function (result) {
+                var listBoards = $("#listBoards");
+                $.each(result, function (i, board) {
+                    if (board.locked) {
+                        if (selected == board.id) {
+                            $("<option style='color:red' selected></option>").val(board.id).text(board.id).appendTo(listBoards);
+                            if (board.locked) {
+                                document.getElementById("upgradeTask").disabled = true;
+                                document.getElementById("downgradeTask").disabled = true;
+                                document.getElementById("addTask").disabled = true;
+                                document.getElementById("updateTask").disabled = true;
+                                document.getElementById("deleteTask").disabled = true;
+                            }
+                            else {
+                                document.getElementById("upgradeTask").disabled = false;
+                                document.getElementById("downgradeTask").disabled = false;
+                                document.getElementById("addTask").disabled = false;
+                                document.getElementById("updateTask").disabled = false;
+                                document.getElementById("deleteTask").disabled = false;
+                            }
+                        }
+                        else {
+                            $("<option style='color:red'></option>").val(board.id).text(board.id).appendTo(listBoards);
+                        }
+                    }
+                    else { 
+                        if (selected == board.id) {
+                            $("<option style='color:green' selected></option>").val(board.id).text(board.id).appendTo(listBoards);
+                            if (board.locked) {
+                                document.getElementById("upgradeTask").disabled = true;
+                                document.getElementById("downgradeTask").disabled = true;
+                                document.getElementById("addTask").disabled = true;
+                                document.getElementById("updateTask").disabled = true;
+                                document.getElementById("deleteTask").disabled = true;
+
+                            }
+                            else {
+                                document.getElementById("upgradeTask").disabled = false;
+                                document.getElementById("downgradeTask").disabled = false;
+                                document.getElementById("addTask").disabled = false;
+                                document.getElementById("updateTask").disabled = false;
+                                document.getElementById("deleteTask").disabled = false;
+                            }
+                        }
+                        else {
+                            $("<option style='color:green'></option>").val(board.id).text(board.id).appendTo(listBoards);
+                        }
+                    }
+                    
+                });
+
+                if (selected == null) {
+                    if (result.length > 0) {
+                        if (result[0].locked) {
+                            document.getElementById("upgradeTask").disabled = true;
+                            document.getElementById("downgradeTask").disabled = true;
+                            document.getElementById("addTask").disabled = true;
+                            document.getElementById("updateTask").disabled = true;
+                            document.getElementById("deleteTask").disabled = true;
+                        }
+                    }
+                }
+
+
+                callback();
+            }
+        })
+
+
+    }
+
+    function ReloadBoard() {
+
+        var task = document.getElementsByClassName("DivTask");
+        for(var i = task.length - 1 ; i >= 0 ; i--)
+        {
+            task[i].remove();
+        }
+
+        var TODO = document.getElementById("TODO");
+        var DOING = document.getElementById("DOING");
+        var DONE = document.getElementById("DONE");
+
+        $.ajax({
+            url: "https://localhost:44303/Tasks/GetTasksByBoard/"+ document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value,
+            type: "get",
+             success: function (result) {
+                 $.each(result, function (i, task) {
+                     if (task.status == 0) {
+                         
+                         var e = document.createElement("div");
+
+                         var checkbox = document.createElement('input');
+                         checkbox.type = "checkbox";
+                         checkbox.classList.add("checkbox");
+                         checkbox.name = task.id;
+                         checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                         checkbox.id = task.id;
+
+                         e.appendChild(checkbox);
+
+                         e.classList.add("DivTask");
+
+                         var lb = document.createElement("label");
+                         lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+
+
+
+                         e.appendChild(lb);
+                         TODO.appendChild(e);
+
+                     }
+                     else if (task.status == 1) {
+                         
+                         var e = document.createElement("div");
+
+                         var checkbox = document.createElement('input');
+                         checkbox.type = "checkbox";
+                         checkbox.classList.add("checkbox");
+                         checkbox.name = task.id;
+                         checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                         checkbox.id = task.id;
+
+                         e.appendChild(checkbox);
+
+                         e.classList.add("DivTask");
+
+                         var lb = document.createElement("label");
+                         lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                         e.appendChild(lb);
+                         DOING.appendChild(e);
+                     }
+                     else if (task.status == 2) {
+
+                         var e = document.createElement("div");
+                         var checkbox = document.createElement('input');
+                         checkbox.type = "checkbox";
+                         checkbox.classList.add("checkbox");
+                         checkbox.name = task.id;
+                         checkbox.value = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                         checkbox.id = task.id;
+
+                         e.appendChild(checkbox);
+
+                         e.classList.add("DivTask");
+
+                         var lb = document.createElement("label");
+                         lb.innerHTML = "Title: " + task.title + "<br />" + "Description: " + task.description + "<br />" + "End time: " + task.endDateAsString;
+                         e.appendChild(lb);
+                         DONE.appendChild(e);
+                     }
+                });
+            }
+        })
+    }
+
+
+    function UpgradeTasks(callback) {
+        
+        var checkboxes = document.getElementsByClassName('checkbox');
+        var checkedcheckboxes = [];
+        for (var i = 0; i < checkboxes.length; ++i) {
+            if (checkboxes[i].checked == true) {
+                checkedcheckboxes.push(checkboxes[i]);
+            }
+        }
+
+
+        for (var i = 0; i < checkedcheckboxes.length; ++i) {
+            if (checkedcheckboxes[i].checked == true) {
+                $.ajax({
+                    url: "https://localhost:44303/Tasks/UpgradeTask/" + checkedcheckboxes[i].id,
+                    type: "put",
+                    success: function (result) {
+                        if (result.id == checkedcheckboxes[checkedcheckboxes.length - 1].id) {
+                            callback();
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    function DowngradeTasks(callback) {
+        
+        var checkboxes = document.getElementsByClassName('checkbox');
+        var checkedcheckboxes = [];
+        for (var i = 0; i < checkboxes.length; ++i) {
+            if (checkboxes[i].checked == true) {
+                checkedcheckboxes.push(checkboxes[i]);
+            }
+        }
+
+
+        for (var i = 0; i < checkedcheckboxes.length; ++i) {
+            if (checkedcheckboxes[i].checked == true) {
+                $.ajax({
+                    url: "https://localhost:44303/Tasks/DowngradeTask/" + checkedcheckboxes[i].id,
+                    type: "put",
+                    success: function (result) {
+                        if (result.id == checkedcheckboxes[checkedcheckboxes.length - 1].id) {
+                            callback();
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    function DeleteTask(callback) {
+        
+        var checkboxes = document.getElementsByClassName('checkbox');
+        var checkedcheckboxes = [];
+        for (var i = 0; i < checkboxes.length; ++i) {
+            if (checkboxes[i].checked == true) {
+                checkedcheckboxes.push(checkboxes[i]);
+            }
+        }
+
+
+        for (var i = 0; i < checkedcheckboxes.length; ++i) {
+            if (checkedcheckboxes[i].checked == true) {
+                $.ajax({
+                    url: "https://localhost:44303/Tasks/DeleteTask/" + checkedcheckboxes[i].id,
+                    type: "Delete",
+                    success: function (result) {
+                        if (result.id == checkedcheckboxes[checkedcheckboxes.length - 1].id) {
+                            callback();
+                        }
+                    }
+                })
+            }
+        }
+    }
+
+    function UpdateTask(callback) {
+        
+        var checkboxes = document.getElementsByClassName('checkbox');
+        var checkedcheckboxes = [];
+        for (var i = 0; i < checkboxes.length; ++i) {
+            if (checkboxes[i].checked == true) {
+                checkedcheckboxes.push(checkboxes[i]);
+            }
+        }
+
+
+        for (var i = 0; i < checkedcheckboxes.length; ++i) {
+            if (checkedcheckboxes[i].checked == true) {
+                $.ajax({
+                    type: "PUT",
+                    url: "https://localhost:44303/Tasks/PUTTask/" + checkedcheckboxes[i].id,
+                    data: JSON.stringify({
+                        id: new Number(checkedcheckboxes[i].id),
+                        title: document.getElementById("Title").value,
+                        description: document.getElementById("Description").value,
+                        boardid: new Number(document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value)
+                    }),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    success: function (msg) {
+                        alert('Task updated');
+                        callback();
+                    },
+                    error: function (req, status, error) {
+                        alert(error);
+                    }
+                });
+
+            }
+        }
+
+        };
+
+    $(function () {
+        $('#addBoard').click(function () {
+            $.ajax({
+                type: "POST",
+                url: 'https://localhost:44303/Boards/CreateBoard',
+                dataType: "text",
+                success: function (msg) {
+                    if (document.getElementById("listBoards").options.length > 0) {
+                        ReloadBoardList(FillTasks, document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value);
+                    }
+                    else {
+                        ReloadBoardList(FillTasks, null);
+                    }
+                    alert('Board created id : ' + JSON.parse(msg).id);
+                },
+                error: function (req, status, error) {
+                    alert(error);
+                }
+            });
+        });
+
+
+
+
+        $('#lockBoard').click(function () {
+            var select = document.getElementById("listBoards");
+            $.ajax({
+                type: "PUT",
+                url: 'https://localhost:44303/Boards/ChangeLockStatus/' + select.options[select.selectedIndex].value,
+                dataType: "text",
+                success: function (msg) {
+                    ReloadBoardList(FillTasks,  select.options[select.selectedIndex].value);
+                    if (JSON.parse(msg).locked) {
+                        alert("Board locked");
+                    }
+                    else {
+                        alert("Board unlocked");
+                    }
+                },
+                error: function (req, status, error) {
+                    alert(error);
+                }
+            });
+        });
+
+         $('#loadBoard').click(function () {
+             ReloadBoardList(FillTasks,  document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value);
+         });
+
+
+
+
+        $('#upgradeTask').click(function () {
+            UpgradeTasks(ReloadBoard);
+            
+        });
+        $('#downgradeTask').click(function () {
+            DowngradeTasks(ReloadBoard);
+        });
+
+        
+        $('#addTask').click(function () {
+
+            var date = document.getElementById("DateTask").value;
+              $.ajax({
+                type: "POST",
+                url: "https://localhost:44303/Tasks/PostTask",
+                  data: JSON.stringify({
+                      title: document.getElementById("Title").value,
+                      description: document.getElementById("Description").value,
+                      boardid: new Number(document.getElementById("listBoards").options[document.getElementById("listBoards").selectedIndex].value),
+                      endtime: date
+                }),
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                  },
+                success: function (msg) {
+                    alert('Task created');
+                    ReloadBoard();
+                },
+                error: function (req, status, error) {
+                    alert(error);
+                }
+
+              });
+        });
+
+
+        
+        
+        $('#deleteTask').click(function () {
+            DeleteTask(ReloadBoard);
+        });
+        
+        $('#updateTask').click(function () {
+            UpdateTask(ReloadBoard);
+        });
+
+    });
+</script>
